@@ -1,25 +1,23 @@
 # SOURCE.md — Data Source Proposals
 
 **Team:** Yoav Keidar, Hili Netz
-**Ranking:** 1. Tech Hiring Pulse (preferred) · 2. SaaS Reliability Observatory
+**Preference:** 1. Tech Hiring Pulse · 2. SaaS Reliability Observatory
 
----
+All sizes below were measured on our course VM on 2026-11-03 at 16:37 UTC.
 
 ## 1. Tech Hiring Pulse (preferred)
 
-We will track the job postings of a fixed set of about 20–30 technology companies that publish their openings on Greenhouse job boards (for example, Stripe and Figma). By sampling the boards regularly, we can see which roles are advertised, what experience they require and how long each posting stays open, and compare trends across companies, functions and locations, with particular attention to early-career roles.
+We are interested in the tech job market, especially in opportunities for people at the start of their careers. We want to follow the job postings of about 20–30 tech companies that publish their openings on Greenhouse job boards (for example, Stripe and Figma), and see which roles are posted, what experience they ask for, and how the postings change over time.
 
-| Item | Details |
-|---|---|
-| **Data content** | For every open posting, the board list gives: job ID, title, location, first-published time, last-update time and posting URL. The single-posting endpoint adds the department, office and full description (which includes the experience requirements); we fetch it once, when a posting first appears. |
-| **URL** | Board list: `https://boards-api.greenhouse.io/v1/boards/{board_token}/jobs` (e.g. `https://boards-api.greenhouse.io/v1/boards/stripe/jobs`)<br>Single posting: `https://boards-api.greenhouse.io/v1/boards/{board_token}/jobs/{job_id}` |
-| **Update frequency** | Event-driven: companies add, edit and remove postings continuously, mostly on business days. Closed postings disappear from the board, so past states cannot be downloaded later. We plan to sample twice a day (UTC). |
-| **Expected sample size** | Board list: Stripe 461 KB (461,214 bytes; 33.2 KB gzipped), 739 postings; Figma 91 KB (91,189 bytes; 7.6 KB gzipped), 144 postings. Single posting with description: 7.6–11.6 KB (2.8–4.3 KB gzipped), four postings measured. Measured on our course VM, 2026-11-03 16:37 UTC. One run over ~25 boards is about 2.3 MB if the boards are Figma-sized and 11.5 MB if they are Stripe-sized (0.19–0.83 MB gzipped). We will measure each selected board. |
-| **Storage over the semester** | Assumptions: at most 90 days of collection, two runs a day, and about twice as many distinct postings over the semester as are open at the start, each description fetched once. Board lists: 0.4–2.1 GB raw (34–149 MB gzipped). Descriptions: 69–352 MB raw (26–131 MB gzipped). Total: 0.5–2.4 GB raw, which may exceed the course limit of 500 MB, but 60–280 MB gzipped. We will store each run as one gzipped file (`raw/YYYY-mm-dd/HHMM.json.gz`), which the course rules allow. If the boards we select project above 250 MB gzipped, we will sample once a day. |
-| **Limitations** | Covers only companies that use Greenhouse. The board list has no department or description, so these need one more request per posting. A posting's closing time is known only to within one sampling interval (12 hours). A company may close a posting and repost the same role under a new ID. |
-| **API key / password** | No. Greenhouse documents its Job Board GET endpoints as public, with no authentication. |
+- **Content:** For each open posting, the board list gives the job ID, title, location, first-published time, last-update time and URL. A second request per posting returns its department, office and full description, which is where the experience requirements are. We fetch that once, when a posting first appears.
+- **URL:**
+  - Board list: `https://boards-api.greenhouse.io/v1/boards/{board_token}/jobs` (e.g. `https://boards-api.greenhouse.io/v1/boards/stripe/jobs`)
+  - One posting: `https://boards-api.greenhouse.io/v1/boards/{board_token}/jobs/{job_id}`
+- **Update frequency:** Companies add, edit and remove postings whenever they need to; there is no fixed schedule. The board only shows postings that are open right now, so a posting that has closed can no longer be downloaded. We plan to sample twice a day (UTC).
+- **Expected sample size:** Stripe's board list was 461 KB (33 KB gzipped, 739 postings) and Figma's was 91 KB (7.6 KB gzipped, 144 postings). One posting with its description was 7.6–11.6 KB. With ~25 boards, one run is about 2–12 MB, depending on how big the boards are. Over the semester (at most 90 days, two runs a day, and assuming about twice as many postings appear as are open today) this adds up to as much as 2.4 GB raw, but under 300 MB gzipped. We will therefore save each run as one gzipped file, to stay under the course limit of 500 MB.
+- **API key / password:** No. The endpoints are public, and our requests worked without any key or login.
 
-**Sample** — one posting from `https://boards-api.greenhouse.io/v1/boards/stripe/jobs`, retrieved 2026-11-03 16:37 UTC, HTTP 200:
+**Sample** — the first posting in Stripe's board list:
 
 ```json
 {
@@ -51,23 +49,19 @@ We will track the job postings of a fixed set of about 20–30 technology compan
 }
 ```
 
----
-
 ## 2. SaaS Reliability Observatory
 
-We will track the public status pages of a fixed set of about 15–20 SaaS providers whose pages run on Atlassian Statuspage (for example, GitHub, Confluence and New Relic). By sampling the reported status of each provider and its components, we can measure how often incidents happen, how long they last and how providers differ in reliability.
+We want to follow the public status pages of about 15–20 software services that use Atlassian Statuspage (for example, GitHub, Confluence and New Relic), and check how often they report problems, how long the problems last, and how the services compare.
 
-| Item | Details |
-|---|---|
-| **Data content** | From the summary: overall status, the status of each component (operational, degraded performance, partial outage or major outage) and open incidents with their impact level and timestamps. From the incident list: recent incidents with their creation and resolution times. |
-| **URL** | Current status: `https://{status-page}/api/v2/summary.json` (e.g. `https://www.githubstatus.com/api/v2/summary.json`)<br>Recent incidents: `https://{status-page}/api/v2/incidents.json` |
-| **Update frequency** | Event-driven: the status changes whenever a provider posts an update. Incidents are frequent enough to study: GitHub alone reported 2–10 incidents with degraded performance per month in its availability reports from August 2025 to September 2026. The API exposes only the current component status and the last 50 incidents, so a fine-grained history exists only if we record it. We plan to download `summary.json` every 30 minutes and `incidents.json` once a week (UTC). The last 50 incidents went back 73 days on GitHub and more than a year on Confluence and New Relic, so for these providers a weekly download misses none; we will check this for each selected provider. |
-| **Expected sample size** | `summary.json`, with no open incidents: GitHub 4.3 KB (4,310 bytes; 1.1 KB gzipped; 12 components), Confluence 5.5 KB (1.2 KB gzipped; 16 components), New Relic 38.5 KB (4.7 KB gzipped; 115 components). `incidents.json`: 274–574 KB (34–59 KB gzipped). Measured on our course VM, 2026-11-03 16:37 UTC. One run over ~20 providers is about 86 KB if all pages are GitHub-sized and 322 KB at the average of the three pages (22–47 KB gzipped). The summary grows while incidents are open, because it then includes their updates. |
-| **Storage over the semester** | Assumptions: at most 90 days of collection, 48 runs a day and one `incidents.json` download per provider per week. Total: 0.5–1.5 GB raw, which may exceed the course limit of 500 MB, but 110–215 MB gzipped. Sampling every 15 minutes would raise the gzipped upper estimate to about 420 MB, too close to the limit, so we sample every 30 minutes. We will store each run as one gzipped file (`raw/YYYY-mm-dd/HHMM.json.gz`), which the course rules allow. |
-| **Limitations** | The data shows what providers choose to report, not independently measured availability. Providers define their components differently, which limits direct comparison. A component's status change is known only to within one sampling interval (30 minutes). |
-| **API key / password** | No. Statuspage documents these endpoints as public, with no authentication. |
+- **Content:** The overall status, the status of each component (operational, degraded performance, partial outage or major outage) and any open incidents with their impact and times. The incident list also gives recent incidents with their start and resolution times.
+- **URL:**
+  - Current status: `https://{status-page}/api/v2/summary.json` (e.g. `https://www.githubstatus.com/api/v2/summary.json`)
+  - Recent incidents: `https://{status-page}/api/v2/incidents.json`
+- **Update frequency:** The status changes whenever a provider posts an update. The API only shows the current status and the last 50 incidents, so a detailed history exists only if we record it ourselves. Problems are frequent enough to study: GitHub's last 50 incidents covered only 73 days (2026-08-21 to 2026-11-03). We plan to download `summary.json` every 30 minutes and `incidents.json` once a week (UTC). For the three providers we checked, the last 50 incidents went back far more than a week, so a weekly download should not miss any.
+- **Expected sample size:** With no open incidents, `summary.json` was 4.3 KB for GitHub, 5.5 KB for Confluence and 38.5 KB for New Relic (1.1–4.7 KB gzipped). `incidents.json` was 274–574 KB (34–59 KB gzipped). With ~20 providers, one run is about 86–322 KB (22–47 KB gzipped), and the summary gets bigger while incidents are open. Over the semester (at most 90 days) this adds up to as much as 1.5 GB raw, but about 215 MB gzipped, so we will save each run gzipped as well. We chose 30 minutes rather than 15, because 15 minutes would raise the gzipped estimate to about 420 MB, too close to the 500 MB limit.
+- **API key / password:** No. The endpoints are public, and our requests worked without any key or login.
 
-**Sample** — excerpt (page, overall status, first two components, open incidents — none at retrieval time) from `https://www.githubstatus.com/api/v2/summary.json`, retrieved 2026-11-03 16:37 UTC, HTTP 200:
+**Sample** — part of GitHub's `summary.json` (page, overall status, the first two components and open incidents; there were none at the time):
 
 ```json
 {
