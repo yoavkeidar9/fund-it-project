@@ -1,101 +1,115 @@
-#!/bin/bash
+#!/usr/bin/env bash
 set -euo pipefail
 
-# Find the project and the selected board list
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 BOARDS="$SCRIPT_DIR/boards.txt"
 
-# Check the list before starting
+# Validate board list
 [ -f "$BOARDS" ] || { echo "ERROR: boards.txt missing"; exit 1; }
 
-awk 'NF!=2 {bad=1; print "Invalid line:", NR} END {exit bad}' "$BOARDS"
+awk 'NF != 2 { bad=1 } END { exit bad }' "$BOARDS" || {
+    echo "ERROR: Invalid boards.txt"
+    exit 1
+}
 
 [ "$(wc -l < "$BOARDS")" -eq 55 ] || {
     echo "ERROR: Expected 55 boards"
     exit 1
 }
 
-# Create a new UTC snapshot directory
-DATE_UTC=$(date -u +%Y-%m-%d)
-TIME_UTC=$(date -u +%H%M%SZ)
-RUN_DIR="$PROJECT_DIR/raw/$DATE_UTC/$TIME_UTC"
+# Capture the UTC start time
+START_UTC=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+DAY="${START_UTC:0:10}"
+HHMM="${START_UTC:11:2}${START_UTC:14:2}"
+DEST="$PROJECT_DIR/raw/$DAY/$HHMM.jsonl.gz"
 
-mkdir "$RUN_DIR" || {
-    echo "ERROR: Snapshot directory already exists"
+[ ! -e "$DEST" ] || {
+    echo "ERROR: Snapshot already exists: $DEST"
     exit 1
 }
 
-echo "Snapshot directory: $RUN_DIR"
+# Work outside raw until the snapshot is complete
+TMP=$(mktemp -d)
+trap 'rm -rf "$TMP"' EXIT
 
-# Collect only boards listed in boards.txt
+OUT="$TMP/snapshot.jsonl"
+: > "$OUT"
+
+COUNT=0
+
 while read -r ticker board; do
     echo "Collecting $ticker ($board)..."
 
-    STARTED=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+    REQUESTED=$(date -u +%Y-%m-%dT%H:%M:%SZ)
     URL="https://boards-api.greenhouse.io/v1/boards/${board}/jobs?content=true"
 
-    BODY="$RUN_DIR/${ticker}_${board}.response.gz"
-    META="$RUN_DIR/${ticker}_${board}.meta.json"
-    TEMP="$RUN_DIR/${ticker}_${board}.tmp"
+    HTTP=$(curl -sSL --connect-timeout 15 --max-time 180 \
+        --retry 2 \
+        -o "$TMP/response.json" \
+        -w '%{http_code}' "$URL") || {
+        echo "ERROR: curl failed for $board"
+        exit 1
+    }
 
-    if HTTP=$(curl -sSL --connect-timeout 15 --max-time 90 \
-        -o "$TEMP" -w '%{http_code}' "$URL"); then
-        CURL_EXIT=0
-    else
-        CURL_EXIT=$?
-    fi
+    [ "$HTTP" = "200" ] || {
+        echo "ERROR: HTTP $HTTP for $board"
+        exit 1
+    }
 
-    [ -f "$TEMP" ] || touch "$TEMP"
+    jq -e '.jobs | type == "array"' "$TMP/response.json" >/dev/null || {
+        echo "ERROR: Invalid JSON for $board"
+        exit 1
+    }
 
-    OK=false
-    COUNT=0
-    ERROR=""
+    COMPLETED=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 
-    if [ "$CURL_EXIT" -ne 0 ]; then
-        ERROR="curl failed (exit $CURL_EXIT)"
-    elif [ "$HTTP" != "200" ]; then
-        ERROR="HTTP $HTTP"
-    elif jq -e '.jobs | type == "array"' "$TEMP" >/dev/null 2>&1; then
-        OK=true
-        COUNT=$(jq '.jobs | length' "$TEMP")
-    else
-        ERROR="Invalid jobs JSON"
-    fi
-
-    gzip -c "$TEMP" > "$BODY"
-    rm "$TEMP"
-
-    FINISHED=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-
-    jq -n \
+    jq -c \
         --arg ticker "$ticker" \
-        --arg board_token "$board" \
-        --arg requested_at_utc "$STARTED" \
-        --arg completed_at_utc "$FINISHED" \
-        --arg http "$HTTP" \
-        --arg error "$ERROR" \
-        --arg response_file "$(basename "$BODY")" \
-        --argjson curl_exit "$CURL_EXIT" \
-        --argjson ok "$OK" \
-        --argjson jobs_count "$COUNT" \
+        --arg board "$board" \
+        --arg requested "$REQUESTED" \
+        --arg completed "$COMPLETED" \
         '{
             ticker: $ticker,
-            board_token: $board_token,
-            requested_at_utc: $requested_at_utc,
-            completed_at_utc: $completed_at_utc,
-            http_code: ($http | tonumber),
-            curl_exit: $curl_exit,
+            board_token: $board,
+            requested_at_utc: $requested,
+            completed_at_utc: $completed,
+            http_status: 200,
+            ok: true,
             content_requested: true,
-            ok: $ok,
-            error: $error,
-            jobs_count: $jobs_count,
-            response_file: $response_file
-        }' > "$META"
+            jobs_count: (.jobs | length),
+            response: .
+        }' "$TMP/response.json" >> "$OUT"
 
-    echo "$ticker | HTTP $HTTP | OK $OK | Jobs $COUNT"
-
+    COUNT=$((COUNT + 1))
+    echo "Completed $COUNT/55"
+    sleep 1
 done < "$BOARDS"
 
+[ "$COUNT" -eq 55 ] || {
+    echo "ERROR: Only collected $COUNT boards"
+    exit 1
+}
+
+# Compress and validate
+gzip -c "$OUT" > "$TMP/snapshot.jsonl.gz"
+gzip -t "$TMP/snapshot.jsonl.gz"
+
+[ "$(wc -l < "$OUT")" -eq 55 ] || {
+    echo "ERROR: Snapshot does not contain 55 records"
+    exit 1
+}
+
+# Save exactly one immutable snapshot file
+mkdir -p "$PROJECT_DIR/raw/$DAY"
+
+[ ! -e "$DEST" ] || {
+    echo "ERROR: Destination already exists"
+    exit 1
+}
+
+mv "$TMP/snapshot.jsonl.gz" "$DEST"
+
 echo "SNAPSHOT FINISHED"
-echo "Saved to: $RUN_DIR"
+echo "Boards collected: $COUNT"
+echo "Saved to: $DEST"
