@@ -1,0 +1,13 @@
+{
+  "ticker": "OKTA",
+  "board_token": "okta",
+  "requested_at_utc": "2026-11-17T12:54:00Z",
+  "completed_at_utc": "2026-11-17T12:54:01Z",
+  "http_code": 200,
+  "curl_exit": 0,
+  "content_requested": true,
+  "ok": true,
+  "error": "",
+  "jobs_count": 358,
+  "response_file": "OKTA_okta.response.gz"
+}

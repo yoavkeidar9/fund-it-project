@@ -1,0 +1,13 @@
+{
+  "ticker": "LIF",
+  "board_token": "life360",
+  "requested_at_utc": "2026-11-17T12:54:23Z",
+  "completed_at_utc": "2026-11-17T12:54:23Z",
+  "http_code": 200,
+  "curl_exit": 0,
+  "content_requested": true,
+  "ok": true,
+  "error": "",
+  "jobs_count": 31,
+  "response_file": "LIF_life360.response.gz"
+}

@@ -1,0 +1,13 @@
+{
+  "ticker": "UPST",
+  "board_token": "upstart",
+  "requested_at_utc": "2026-11-17T12:54:18Z",
+  "completed_at_utc": "2026-11-17T12:54:18Z",
+  "http_code": 200,
+  "curl_exit": 0,
+  "content_requested": true,
+  "ok": true,
+  "error": "",
+  "jobs_count": 75,
+  "response_file": "UPST_upstart.response.gz"
+}

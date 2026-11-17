@@ -1,0 +1,13 @@
+{
+  "ticker": "RBLX",
+  "board_token": "roblox",
+  "requested_at_utc": "2026-11-17T12:54:09Z",
+  "completed_at_utc": "2026-11-17T12:54:10Z",
+  "http_code": 200,
+  "curl_exit": 0,
+  "content_requested": true,
+  "ok": true,
+  "error": "",
+  "jobs_count": 265,
+  "response_file": "RBLX_roblox.response.gz"
+}

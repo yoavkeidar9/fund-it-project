@@ -1,0 +1,13 @@
+{
+  "ticker": "YEXT",
+  "board_token": "yext",
+  "requested_at_utc": "2026-11-17T12:54:26Z",
+  "completed_at_utc": "2026-11-17T12:54:27Z",
+  "http_code": 200,
+  "curl_exit": 0,
+  "content_requested": true,
+  "ok": true,
+  "error": "",
+  "jobs_count": 30,
+  "response_file": "YEXT_yext.response.gz"
+}

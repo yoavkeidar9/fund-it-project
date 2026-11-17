@@ -1,0 +1,13 @@
+{
+  "ticker": "FIG",
+  "board_token": "figma",
+  "requested_at_utc": "2026-11-17T12:54:10Z",
+  "completed_at_utc": "2026-11-17T12:54:10Z",
+  "http_code": 200,
+  "curl_exit": 0,
+  "content_requested": true,
+  "ok": true,
+  "error": "",
+  "jobs_count": 140,
+  "response_file": "FIG_figma.response.gz"
+}

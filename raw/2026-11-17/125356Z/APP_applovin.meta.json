@@ -1,0 +1,13 @@
+{
+  "ticker": "APP",
+  "board_token": "applovin",
+  "requested_at_utc": "2026-11-17T12:54:09Z",
+  "completed_at_utc": "2026-11-17T12:54:09Z",
+  "http_code": 200,
+  "curl_exit": 0,
+  "content_requested": true,
+  "ok": true,
+  "error": "",
+  "jobs_count": 43,
+  "response_file": "APP_applovin.response.gz"
+}

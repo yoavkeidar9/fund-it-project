@@ -1,0 +1,13 @@
+{
+  "ticker": "DBX",
+  "board_token": "dropbox",
+  "requested_at_utc": "2026-11-17T12:54:07Z",
+  "completed_at_utc": "2026-11-17T12:54:07Z",
+  "http_code": 200,
+  "curl_exit": 0,
+  "content_requested": true,
+  "ok": true,
+  "error": "",
+  "jobs_count": 41,
+  "response_file": "DBX_dropbox.response.gz"
+}

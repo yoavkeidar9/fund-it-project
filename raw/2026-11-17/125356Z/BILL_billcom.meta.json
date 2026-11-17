@@ -1,0 +1,13 @@
+{
+  "ticker": "BILL",
+  "board_token": "billcom",
+  "requested_at_utc": "2026-11-17T12:54:23Z",
+  "completed_at_utc": "2026-11-17T12:54:24Z",
+  "http_code": 200,
+  "curl_exit": 0,
+  "content_requested": true,
+  "ok": true,
+  "error": "",
+  "jobs_count": 37,
+  "response_file": "BILL_billcom.response.gz"
+}
