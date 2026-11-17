@@ -111,3 +111,60 @@ We want to follow the public status pages of about 15–20 software services tha
   "incidents": []
 }
 ```
+## Actual Data Collection — November 2026
+
+### 1. Selected Data Source
+Our project, Tech Hiring Pulse, uses the public Greenhouse Job Board API to collect currently advertised job openings from selected technology companies.
+
+We selected 54 companies represented by 55 Greenhouse job boards. The full list of selected boards is stored in `tech-hiring-test/boards.txt`.
+
+The API endpoint used for each board is:
+`https://boards-api.greenhouse.io/v1/boards/{board_token}/jobs?content=true`
+
+The `content=true` parameter requests job descriptions in addition to the basic job information. No API key or password is required.
+
+### 2. Data Collection Method
+We created a Bash script named `tech-hiring-test/collect_snapshot.sh`.
+
+The script reads `boards.txt` line by line and sends an API request only to the selected Greenhouse boards.
+
+For each board, the script saves:
+- The API response as a compressed `.response.gz` file.
+- A `.meta.json` file containing the company ticker, board token, request timestamps in UTC, HTTP status code, request outcome, error information, and number of jobs.
+
+Failed requests are recorded separately from successful requests containing zero jobs.
+
+### 3. First Snapshot
+The first official snapshot was collected on November 17, 2026.
+
+Snapshot directory:
+`raw/2026-11-17/125356Z/`
+
+The snapshot contains:
+- 55 compressed API response files.
+- 55 metadata files.
+- 110 files in total.
+- Approximately 12 MB of stored data.
+
+All 55 requests were reported as successful. The compressed files and JSON structures were checked for validity.
+
+### 4. Collection Frequency
+We plan to collect four snapshots on four separate UTC calendar days.
+
+Each snapshot will be saved in a separate directory using its UTC date and collection start time. Previous snapshots will be preserved without modification.
+
+### 5. Data Quality and Limitations
+The Greenhouse API provides publicly advertised job postings, not confirmed hires or completed recruitment processes.
+
+A job appearing in a snapshot is not necessarily a job that was created on that day.
+
+Job titles, descriptions, locations, and publication timestamps may vary in completeness across companies.
+
+We will compare job identifiers across snapshots to identify newly observed and removed postings. Changes in advertised openings will be treated as an indicator of hiring activity, not as a direct measure of actual hiring.
+
+### 6. Reproducibility
+The board selection file, collection script, and raw snapshots are version-controlled in our GitHub repository.
+
+The original API responses are stored in compressed form without manual editing.
+
+Collection metadata is retained to support verification and distinguish successful requests from failed requests.
