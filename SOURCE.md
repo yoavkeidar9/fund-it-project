@@ -1,170 +1,124 @@
-# SOURCE.md — Data Source Proposals
+# Tech Hiring Pulse — SOURCE.md
 
 **Team:** Yoav Keidar, Hili Netz
-**Preference:** 1. Tech Hiring Pulse · 2. SaaS Reliability Observatory
 
-All sizes below were measured on our course VM on 2026-11-03 at 16:37 UTC.
+## 1. Data Source
 
-## 1. Tech Hiring Pulse (preferred)
+For our project, we chose to follow job postings from technology companies.
 
-We are interested in the tech job market, especially in opportunities for people at the start of their careers. We want to follow the job postings of about 20–30 tech companies that publish their openings on Greenhouse job boards (for example, Stripe and Figma), and see which roles are posted, what experience they ask for, and how the postings change over time.
+We use the Greenhouse Job Board API, which lets us collect publicly available job openings from companies that use Greenhouse.
 
-- **Content:** For each open posting, the board list gives the job ID, title, location, first-published time, last-update time and URL. A second request per posting returns its department, office and full description, which is where the experience requirements are. We fetch that once, when a posting first appears.
-- **URL:**
-  - Board list: `https://boards-api.greenhouse.io/v1/boards/{board_token}/jobs` (e.g. `https://boards-api.greenhouse.io/v1/boards/stripe/jobs`)
-  - One posting: `https://boards-api.greenhouse.io/v1/boards/{board_token}/jobs/{job_id}`
-- **Update frequency:** Companies add, edit and remove postings whenever they need to; there is no fixed schedule. The board only shows postings that are open right now, so a posting that has closed can no longer be downloaded. We plan to sample twice a day (UTC).
-- **Expected sample size:** Stripe's board list was 461 KB (33 KB gzipped, 739 postings) and Figma's was 91 KB (7.6 KB gzipped, 144 postings). One posting with its description was 7.6–11.6 KB. With ~25 boards, one run is about 2–12 MB, depending on how big the boards are. Over the semester (at most 90 days, two runs a day, and assuming about twice as many postings appear as are open today) this adds up to as much as 2.4 GB raw, but under 300 MB gzipped. We will therefore save each run as one gzipped file, to stay under the course limit of 500 MB.
-- **API key / password:** No. The endpoints are public, and our requests worked without any key or login.
+Our list currently includes 54 companies and 55 job boards. DoorDash has two separate boards in our list.
 
-**Sample** — the first posting in Stripe's board list:
+The API address is:
 
-```json
-{
-  "absolute_url": "https://stripe.com/jobs/search?gh_jid=8172508",
-  "data_compliance": [
-    {
-      "type": "gdpr",
-      "requires_consent": false,
-      "requires_processing_consent": false,
-      "requires_retention_consent": false,
-      "retention_period": null,
-      "demographic_data_consent_applies": false
-    }
-  ],
-  "education": "education_required",
-  "internal_job_id": 3537062,
-  "location": {
-    "name": "Dublin"
-  },
-  "metadata": null,
-  "id": 8172508,
-  "updated_at": "2026-10-29T10:42:09-04:00",
-  "requisition_id": "See Opening ID",
-  "title": "Abuse Investigator",
-  "company_name": "Stripe",
-  "first_published": "2026-09-03T13:32:53-04:00",
-  "language": "en",
-  "application_deadline": null
-}
-```
+`https://boards-api.greenhouse.io/v1/boards/{board_token}/jobs`
 
-## 2. SaaS Reliability Observatory
+We use `curl` to request the data and receive the results in JSON format. We do not need an API key or login.
 
-We want to follow the public status pages of about 15–20 software services that use Atlassian Statuspage (for example, GitHub, Confluence and New Relic), and check how often they report problems, how long the problems last, and how the services compare.
+We chose this source because job postings change over time. Companies can add new positions, update existing ones or remove them. By collecting the data on different days, we can compare these changes instead of looking only at the current situation.
 
-- **Content:** The overall status, the status of each component (operational, degraded performance, partial outage or major outage) and any open incidents with their impact and times. The incident list also gives recent incidents with their start and resolution times.
-- **URL:**
-  - Current status: `https://{status-page}/api/v2/summary.json` (e.g. `https://www.githubstatus.com/api/v2/summary.json`)
-  - Recent incidents: `https://{status-page}/api/v2/incidents.json`
-- **Update frequency:** The status changes whenever a provider posts an update. The API only shows the current status and the last 50 incidents, so a detailed history exists only if we record it ourselves. Problems are frequent enough to study: GitHub's last 50 incidents covered only 73 days (2026-08-21 to 2026-11-03). We plan to download `summary.json` every 30 minutes and `incidents.json` once a week (UTC). For the three providers we checked, the last 50 incidents went back far more than a week, so a weekly download should not miss any.
-- **Expected sample size:** With no open incidents, `summary.json` was 4.3 KB for GitHub, 5.5 KB for Confluence and 38.5 KB for New Relic (1.1–4.7 KB gzipped). `incidents.json` was 274–574 KB (34–59 KB gzipped). With ~20 providers, one run is about 86–322 KB (22–47 KB gzipped), and the summary gets bigger while incidents are open. Over the semester (at most 90 days) this adds up to as much as 1.5 GB raw, but about 215 MB gzipped, so we will save each run gzipped as well. We chose 30 minutes rather than 15, because 15 minutes would raise the gzipped estimate to about 420 MB, too close to the 500 MB limit.
-- **API key / password:** No. The endpoints are public, and our requests worked without any key or login.
+## 2. Data Collection
 
-**Sample** — part of GitHub's `summary.json` (page, overall status, the first two components and open incidents; there were none at the time):
+We started collecting data on November 17, 2026.
 
-```json
-{
-  "page": {
-    "id": "kctbh9vrtdwd",
-    "name": "GitHub",
-    "url": "https://www.githubstatus.com",
-    "time_zone": "Etc/UTC",
-    "updated_at": "2026-11-03T15:59:27.076Z"
-  },
-  "status": {
-    "indicator": "none",
-    "description": "All Systems Operational"
-  },
-  "components": [
-    {
-      "id": "8l4ygp009s5s",
-      "name": "Git Operations",
-      "status": "operational",
-      "created_at": "2017-01-31T20:05:05.370Z",
-      "updated_at": "2026-10-07T15:49:53.270Z",
-      "position": 1,
-      "description": "Performance of git clones, pulls, pushes, and associated operations",
-      "showcase": true,
-      "start_date": null,
-      "group_id": null,
-      "page_id": "kctbh9vrtdwd",
-      "group": false,
-      "only_show_if_degraded": false
-    },
-    {
-      "id": "4230lsnqdsld",
-      "name": "Webhooks",
-      "status": "operational",
-      "created_at": "2019-11-13T18:00:24.256Z",
-      "updated_at": "2026-10-30T18:32:39.707Z",
-      "position": 2,
-      "description": "Real time HTTP callbacks of user-generated and system events",
-      "showcase": true,
-      "start_date": null,
-      "group_id": null,
-      "page_id": "kctbh9vrtdwd",
-      "group": false,
-      "only_show_if_degraded": false
-    }
-  ],
-  "incidents": []
-}
-```
-## Actual Data Collection — November 2026
+For the first collection, we saved 55 API responses and 55 metadata files, for a total of 110 files. The files were compressed and stored under `raw/2026-11-17/`.
 
-### 1. Selected Data Source
-Our project, Tech Hiring Pulse, uses the public Greenhouse Job Board API to collect currently advertised job openings from selected technology companies.
+For the following days, we used a Bash script called `collect_snapshot.sh` to collect the boards and save each daily snapshot as one compressed JSONL file.
 
-We selected 54 companies represented by 55 Greenhouse job boards. The full list of selected boards is stored in `tech-hiring-test/boards.txt`.
+The snapshots from November 18, 19 and 20 were saved as:
 
-The API endpoint used for each board is:
-`https://boards-api.greenhouse.io/v1/boards/{board_token}/jobs?content=true`
+- `raw/2026-11-18/0849.jsonl.gz`
+- `raw/2026-11-19/0831.jsonl.gz`
+- `raw/2026-11-20/0859.jsonl.gz`
 
-The `content=true` parameter requests job descriptions in addition to the basic job information. No API key or password is required.
+The script goes through our board list and uses `curl` to request the job postings from each board.
 
-### 2. Data Collection Method
-We created a Bash script named `tech-hiring-test/collect_snapshot.sh`.
+We use UTC for the collection times and file names, as required by the course.
 
-The script reads `boards.txt` line by line and sends an API request only to the selected Greenhouse boards.
+We keep the previous snapshots because we want to compare the data over time. We do not edit the files after they are saved.
 
-For each board, the script saves:
-- The API response as a compressed `.response.gz` file.
-- A `.meta.json` file containing the company ticker, board token, request timestamps in UTC, HTTP status code, request outcome, error information, and number of jobs.
+## 3. Planned Dataset Schema
 
-Failed requests are recorded separately from successful requests containing zero jobs.
+Later in the project, we will organize the collected information into one table.
 
-### 3. First Snapshot
-The first official snapshot was collected on November 17, 2026.
+Our current plan is to use one row for each job posting in each snapshot.
 
-Snapshot directory:
-`raw/2026-11-17/125356Z/`
+These are the fields we plan to include:
 
-The snapshot contains:
-- 55 compressed API response files.
-- 55 metadata files.
-- 110 files in total.
-- Approximately 12 MB of stored data.
+| Column | Type | Description |
+|---|---|---|
+| snapshot_utc | Text / DateTime | When we collected the data |
+| ticker | Text | Company ticker or identifier |
+| board_token | Text | Greenhouse board identifier |
+| job_id | Text | Job posting ID |
+| title | Text | Name of the position |
+| location | Text | Location of the job |
+| first_published | Text / DateTime | When the job was first published, if available |
+| updated_at | Text / DateTime | Last update time, if available |
+| job_url | Text | Link to the job posting |
 
-All 55 requests were reported as successful. The compressed files and JSON structures were checked for validity.
+This is our planned schema. We may need to make small changes when we start combining the raw files into a single dataset.
 
-### 4. Collection Frequency
-We plan to collect four snapshots on four separate UTC calendar days.
+Some fields may be missing for certain job postings. We will keep those values missing rather than filling them with estimated information.
 
-Each snapshot will be saved in a separate directory using its UTC date and collection start time. Previous snapshots will be preserved without modification.
+## 4. Why We Chose These Fields
 
-### 5. Data Quality and Limitations
-The Greenhouse API provides publicly advertised job postings, not confirmed hires or completed recruitment processes.
+We selected these fields because they can help us compare job postings between companies and over time.
 
-A job appearing in a snapshot is not necessarily a job that was created on that day.
+The company identifier tells us which company published the position.
 
-Job titles, descriptions, locations, and publication timestamps may vary in completeness across companies.
+The job ID is especially important because it allows us to recognize the same posting in different snapshots. This way, we can see if a posting is new, still available or no longer listed.
 
-We will compare job identifiers across snapshots to identify newly observed and removed postings. Changes in advertised openings will be treated as an indicator of hiring activity, not as a direct measure of actual hiring.
+The title and location can help us compare different types of jobs and the countries or cities where companies are recruiting.
 
-### 6. Reproducibility
-The board selection file, collection script, and raw snapshots are version-controlled in our GitHub repository.
+Publication and update dates may help us understand when a position was published or changed, when that information is available.
 
-The original API responses are stored in compressed form without manual editing.
+We also keep the collection time because it tells us when we actually observed the posting.
 
-Collection metadata is retained to support verification and distinguish successful requests from failed requests.
+## 5. Mapping the Raw Data
+
+The Greenhouse API returns JSON data, so we will need to extract specific fields when building our dataset.
+
+For example, the API returns a list of jobs inside the `jobs` field.
+
+Our planned mapping is:
+
+| Dataset Column | API Field |
+|---|---|
+| job_id | jobs[].id |
+| title | jobs[].title |
+| location | jobs[].location.name |
+| first_published | jobs[].first_published |
+| updated_at | jobs[].updated_at |
+| job_url | jobs[].absolute_url |
+
+The company identifier, board token and collection time come from our collection process rather than directly from the job posting.
+
+The exact mapping will also depend on the structure of our saved snapshot files. We will check this before writing the normalization script.
+
+We also need to distinguish between a board that has no open positions and a request that failed. These are not the same thing, and we do not want a technical error to affect our results.
+
+## 6. Data Size and Limitations
+
+One of the main limitations of this project is the 500 MB storage limit.
+
+Before starting the full collection, we tested individual Greenhouse boards, including Stripe and Figma, to understand the size and structure of the responses.
+
+The first full snapshot, collected on November 17, was approximately 12 MB.
+
+Our later snapshots were also around 11 MB each. For example, the November 20 file was 11,051,928 bytes, or about 11.05 MB.
+
+If future snapshots remain around this size, 30 snapshots would require approximately 332 MB, and 40 snapshots would require approximately 442 MB.
+
+This means we need to be careful with how often we collect data. We will monitor the file sizes and may need to change the collection frequency or compression method to stay within the limit.
+
+There are also limitations in the data itself.
+
+Greenhouse shows job advertisements, not actual hiring results. If a company publishes ten positions, it does not mean that ten employees were hired.
+
+A position can also appear in several snapshots, so we cannot count every appearance as a new job.
+
+Another limitation is that not all technology companies use Greenhouse. Our dataset only represents the companies and boards that we selected.
+
+Our goal is to use the snapshots to understand changes in advertised job openings over time, while keeping these limitations in mind.
